@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beyond the Protocols: Results</title>
+<link rel="stylesheet" href="btp.css">
+<script src="qrcode.js"></script>
+<style>
+  /* Sized for a PowerPoint Web Viewer box: everything scales with the frame width. */
+  html, body { height: 100%; overflow: hidden; background: var(--surface); }
+  body { display: grid; grid-template-rows: 1fr auto; padding: 4vw 4.5vw 3vw; gap: 3vw; }
+  .bars { --opt-size: 3.6vw; --pct-size: 4.6vw; --bar-h: 2.6vw; --row-gap: 2.6vw; align-content: center; }
+  .bars.short { --row-gap: 3.2vw; --bar-h: 3.4vw; }
+  .badge { width: 6vw; height: 6vw; font-size: 3.2vw; }
+  .legend { font-size: 2.8vw; margin-bottom: 2vw; }
+  .legend i { width: 5vw; height: 2vw; }
+  footer { display: flex; align-items: center; gap: 3vw; color: var(--muted); font-size: 2.8vw; }
+  footer b { color: #fff; font-family: var(--display); font-size: 4.2vw; font-weight: 700; margin-right: .8vw; }
+  footer .pill { font-size: 2.2vw; padding: 1vw 2vw; }
+  footer .pill .dot { width: 1.8vw; height: 1.8vw; }
+  footer .join { margin-left: auto; display: flex; align-items: center; gap: 2vw; }
+  footer .join svg { width: 11vw; height: 11vw; background: #fff; border-radius: 1vw; padding: .6vw; }
+  .wait { display: grid; place-items: center; text-align: center; color: var(--muted); font-size: 3.4vw; }
+</style>
+</head>
+<body>
+<main id="main"><div class="wait">Connecting...</div></main>
+<footer id="foot"></footer>
+<script type="module">
+// results.html?p=p01            this poll, always (one per slide)
+// results.html                  whichever poll is live
+// &labels=0 bars and letters only (the slide already lists the options)
+// &qr=0      no join code in the footer
+import { connect, params, pollById, tally, barsMarkup, updateBars, qrSvg, joinUrl, esc } from "./app.js";
+
+const FIXED = params.get("p");
+const SHORT = params.get("labels") === "0";
+const QR = params.get("qr") !== "0";
+const main = document.getElementById("main"), foot = document.getElementById("foot");
+let api, control = {}, votes = {}, prevVotes = {}, subs = [], built = null;
+
+const pid = () => FIXED || control.poll || null;
+
+function paint() {
+  const p = pollById(pid());
+  const live = !!p && control.poll === p.id;
+  const compare = !!(p && p.compareWith && live && control.compare);
+  const key = `${p ? p.id : ""}|${compare}`;
+  if (key !== built) {
+    built = key;
+    main.innerHTML = p
+      ? `${compare ? `<div class="legend"><span class="prev"><i></i>First vote</span><span class="now"><i></i>Now</span></div>` : ""}${barsMarkup(p, { compare, short: SHORT })}`
+      : `<div class="wait">Waiting for the next question</div>`;
+    if (SHORT) main.querySelector(".bars")?.classList.add("short");
+    foot.innerHTML = `<span><b id="n">0</b><span id="nl">votes</span></span><span class="pill" id="pill"><span class="dot"></span><span id="pt"></span></span>
+      ${QR ? `<span class="join">${qrSvg(joinUrl(), 220)}<span>${esc(joinUrl().replace(/^https?:\/\//, "").replace(/\/$/, ""))}</span></span>` : ""}`;
+  }
+  if (!p) return;
+  const now = tally(votes, p.options.length);
+  const prev = compare ? tally(prevVotes, p.options.length) : null;
+  // A poll that isn't live any more shows its final result; the live one obeys Reveal.
+  updateBars(main, now, prev, { hidden: live && !control.show });
+  document.getElementById("n").textContent = now.n;
+  document.getElementById("nl").textContent = now.n === 1 ? "vote" : "votes";
+  const open = live && !!control.open;
+  document.getElementById("pill").classList.toggle("is-open", open);
+  document.getElementById("pt").textContent = open ? "Voting open" : "Closed";
+}
+
+function resub() {
+  subs.forEach(u => u && u()); subs = []; votes = {}; prevVotes = {};
+  const p = pollById(pid());
+  if (!p) return;
+  subs.push(api.onVotes(p.id, v => { votes = v; paint(); }));
+  if (p.compareWith) subs.push(api.onVotes(p.compareWith, v => { prevVotes = v; paint(); }));
+}
+
+(async () => {
+  api = await connect();
+  let last;
+  api.onControl(c => {
+    control = c;
+    if (pid() !== last) { last = pid(); resub(); }
+    paint();
+  });
+  if (FIXED) { last = FIXED; resub(); }
+})();
+</script>
+</body>
+</html>

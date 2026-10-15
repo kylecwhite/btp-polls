@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beyond the Protocols: Presenter</title>
+<link rel="stylesheet" href="btp.css">
+<script src="qrcode.js"></script>
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  body { display: flex; flex-direction: column; }
+  .board { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr minmax(240px, 24vw); gap: 3.2vw; padding: 2.6vw 3.4vw 2vw; }
+  .main { min-width: 0; display: flex; flex-direction: column; }
+  .main .kicker { font-size: clamp(11px, .95vw, 18px); margin-bottom: 1.1vw; }
+  h1.question { font-family: var(--display); font-weight: 400; font-size: clamp(22px, 2.55vw, 52px); line-height: 1.22; margin: 0 0 1.6vw; }
+  .legend { margin: -.4vw 0 1.2vw; font-size: clamp(12px, .95vw, 18px); }
+  .main .bars { --opt-size: clamp(14px, 1.38vw, 28px); --pct-size: clamp(18px, 1.9vw, 38px); --bar-h: clamp(10px, 1.05vw, 22px); --row-gap: clamp(8px, 1.15vw, 24px); }
+  .main .badge { width: clamp(28px, 2.3vw, 46px); height: clamp(28px, 2.3vw, 46px); font-size: clamp(14px, 1.2vw, 24px); }
+  .hidden-note { margin-top: auto; padding-top: 1vw; color: var(--muted); font-size: clamp(12px, .95vw, 18px); }
+
+  .rail { display: flex; flex-direction: column; gap: 1.4vw; align-items: stretch; }
+  .count { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1.2vw 1.4vw; }
+  .count b { display: block; font-family: var(--display); font-size: clamp(36px, 4.4vw, 90px); line-height: 1; }
+  .count span { color: var(--muted); font-size: clamp(12px, .95vw, 18px); }
+  .join { margin-top: auto; background: #fff; color: var(--surface); border-radius: 14px; padding: 1vw; text-align: center; }
+  .rail .join { width: min(100%, 17vw); align-self: flex-end; }
+  .join svg { width: 100%; height: auto; display: block; }
+  .join .url { font-weight: 700; font-size: clamp(11px, .9vw, 18px); margin-top: .5vw; word-break: break-all; }
+  .join .cta { font-size: clamp(10px, .75vw, 15px); letter-spacing: .14em; text-transform: uppercase; color: #475569; margin-top: .2vw; }
+
+  /* Idle: nothing selected */
+  .idle { flex: 1; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 5vw; padding: 0 7vw; }
+  .idle h1 { font-family: var(--display); font-weight: 400; font-size: clamp(34px, 4.2vw, 84px); margin: 1vw 0; line-height: 1.1; }
+  .idle p { color: var(--muted); font-size: clamp(15px, 1.4vw, 28px); margin: 0; max-width: 32ch; line-height: 1.45; }
+  .idle .join { width: clamp(220px, 26vw, 520px); margin: 0; padding: 1.4vw; }
+
+  /* Presenter toolbar */
+  .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 16px; background: #060E1B; border-top: 1px solid var(--border); font-size: 13px; }
+  .toolbar.off { display: none; }
+  .toolbar .grp { display: flex; gap: 6px; align-items: center; }
+  .toolbar .sep { width: 1px; height: 22px; background: var(--border); margin: 0 6px; }
+  .tb { padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); cursor: pointer; color: var(--fg-2); white-space: nowrap; }
+  .tb:hover { border-color: var(--accent); }
+  .tb.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .tb.warn { border-color: #7f1d1d; }
+  .tb.armed { background: #7f1d1d; color: #fff; }
+  .tb:disabled { opacity: .4; cursor: default; }
+  .toolbar .who { margin-left: auto; color: var(--muted); }
+  .toolbar kbd { font: 11px var(--body); color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; margin-left: 4px; }
+  .signin { position: fixed; right: 14px; bottom: 12px; }
+</style>
+</head>
+<body>
+<div class="topbar"></div>
+<div id="stage" style="flex:1;min-height:0;display:flex;flex-direction:column"></div>
+<footer class="toolbar off" id="toolbar"></footer>
+<button class="tb signin hidden" id="signin">Sign in to run polls</button>
+
+<script type="module">
+import { connect, SET, POLLS, pollById, letter, esc, tally, barsMarkup, updateBars, qrSvg, joinUrl, offlineBanner, DEMO } from "./app.js";
+
+const stage = document.getElementById("stage");
+const toolbar = document.getElementById("toolbar");
+const signinBtn = document.getElementById("signin");
+const JOIN = joinUrl();
+const JOIN_TEXT = JOIN.replace(/^https?:\/\//, "").replace(/\/$/, "");
+
+let api, control = {}, votes = {}, prevVotes = {}, subs = [], built = null, toolbarHidden = false, armed = false;
+
+const joinCard = () => `<div class="join">${qrSvg(JOIN, 400)}<div class="url">${esc(JOIN_TEXT)}</div><div class="cta">Scan to vote</div></div>`;
+
+function build() {
+  const p = pollById(control.poll);
+  const compare = !!(p && p.compareWith && control.compare);
+  const key = `${p ? p.id : ""}|${compare}`;
+  if (key === built) return;
+  built = key;
+  if (!p) {
+    stage.innerHTML = `<div class="idle"><div>
+        <div class="kicker">${esc(SET.title)}</div>
+        <h1>Join the polls</h1>
+        <p>Scan the code or type the address on your phone. Keep the page open: each question appears there when voting opens.</p>
+      </div>${joinCard()}</div>`;
+    return;
+  }
+  stage.innerHTML = `<div class="board">
+    <section class="main">
+      <div class="kicker">Polling question${p.patient ? "  ·  " + esc(p.patient.name) : ""}${p.label ? "  ·  " + esc(p.label) : ""}</div>
+      <h1 class="question">${esc(p.question)}</h1>
+      ${compare ? `<div class="legend"><span class="prev"><i></i>First vote</span><span class="now"><i></i>Now</span></div>` : ""}
+      ${barsMarkup(p, { compare })}
+      <div class="hidden-note" id="hiddenNote"></div>
+    </section>
+    <aside class="rail">
+      <span class="pill" id="pill"><span class="dot"></span><span id="pillText"></span></span>
+      <div class="count"><b id="n">0</b><span id="nLabel">votes</span></div>
+      ${joinCard()}
+    </aside>
+  </div>`;
+}
+
+function paint() {
+  build();
+  const p = pollById(control.poll);
+  if (p) {
+    const now = tally(votes, p.options.length);
+    const compare = !!(p.compareWith && control.compare);
+    const prev = compare ? tally(prevVotes, p.options.length) : null;
+    const hidden = !control.show;
+    updateBars(stage, now, prev, { hidden });
+    document.getElementById("n").textContent = now.n;
+    document.getElementById("nLabel").textContent = (now.n === 1 ? "vote" : "votes") + (prev ? `  (first vote: ${prev.n})` : "");
+    const pill = document.getElementById("pill");
+    pill.classList.toggle("is-open", !!control.open);
+    document.getElementById("pillText").textContent = control.open ? "Voting open" : "Voting closed";
+    document.getElementById("hiddenNote").textContent = hidden ? (now.n ? "Results hidden until reveal." : "") : "";
+  }
+  paintToolbar();
+}
+
+function resub() {
+  subs.forEach(u => u && u()); subs = [];
+  votes = {}; prevVotes = {};
+  const p = pollById(control.poll);
+  if (!p) return;
+  subs.push(api.onVotes(p.id, v => { votes = v; paint(); }));
+  if (p.compareWith) subs.push(api.onVotes(p.compareWith, v => { prevVotes = v; paint(); }));
+}
+
+function paintToolbar() {
+  const admin = api && api.isAdmin();
+  signinBtn.classList.toggle("hidden", !api || admin || api.demo);
+  toolbar.classList.toggle("off", !admin || toolbarHidden);
+  if (!admin) return;
+  const p = pollById(control.poll);
+  toolbar.innerHTML = `
+    <div class="grp">
+      <button class="tb ${!p ? "on" : ""}" data-poll="">Join screen</button>
+      ${POLLS.map(q => `<button class="tb ${p && p.id === q.id ? "on" : ""}" data-poll="${q.id}" title="${esc(q.question)}">Slide ${q.slide}: ${esc(q.patient ? q.patient.name : "Poll " + q.n)}${q.compareWith ? " again" : ""}</button>`).join("")}
+    </div>
+    <span class="sep"></span>
+    <div class="grp">
+      <button class="tb ${control.open ? "on" : ""}" id="bOpen" ${p ? "" : "disabled"}>${control.open ? "Close voting" : "Open voting"}<kbd>O</kbd></button>
+      <button class="tb ${control.show ? "on" : ""}" id="bShow" ${p ? "" : "disabled"}>${control.show ? "Hide results" : "Reveal results"}<kbd>R</kbd></button>
+      ${p && p.compareWith ? `<button class="tb ${control.compare ? "on" : ""}" id="bCmp">Compare with first vote<kbd>C</kbd></button>` : ""}
+      <button class="tb warn ${armed ? "armed" : ""}" id="bClear" ${p ? "" : "disabled"}>${armed ? "Click again to clear" : "Clear votes"}</button>
+    </div>
+    <span class="who">${api.demo ? "Demo mode (this browser only)" : esc(api.user().email)}  ·  <kbd>H</kbd> hide bar  <kbd>F</kbd> full screen</span>
+    ${api.demo ? "" : `<button class="tb" id="bOut">Sign out</button>`}`;
+  toolbar.querySelectorAll("[data-poll]").forEach(b => b.onclick = () => choose(b.dataset.poll || null));
+  const on = (id, f) => { const b = document.getElementById(id); if (b) b.onclick = f; };
+  on("bOpen", toggleOpen); on("bShow", toggleShow); on("bCmp", toggleCompare); on("bClear", clearVotes);
+  on("bOut", () => api.signOut());
+}
+
+// Choosing a poll puts it on screen with voting open and results hidden.
+const choose = id => api.setControl({ poll: id, open: !!id, show: false, compare: false });
+const toggleOpen = () => control.poll && api.setControl({ open: !control.open });
+const toggleShow = () => control.poll && api.setControl({ show: !control.show });
+const toggleCompare = () => { const p = pollById(control.poll); if (p && p.compareWith) api.setControl({ compare: !control.compare, show: true }); };
+function clearVotes() {
+  if (!control.poll) return;
+  if (!armed) { armed = true; paintToolbar(); setTimeout(() => { armed = false; paintToolbar(); }, 3000); return; }
+  armed = false; api.resetVotes(control.poll);
+}
+
+addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key.toLowerCase();
+  if (k === "h") { toolbarHidden = !toolbarHidden; paintToolbar(); return; }
+  if (k === "f") { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen().catch(() => {}); return; }
+  if (!api || !api.isAdmin()) return;
+  if (k === "o") toggleOpen();
+  else if (k === "r") toggleShow();
+  else if (k === "c") toggleCompare();
+  else if (k === "arrowright" || k === "arrowleft") {
+    const ids = [null, ...POLLS.map(p => p.id)];
+    const i = ids.indexOf(control.poll || null);
+    choose(ids[Math.max(0, Math.min(ids.length - 1, i + (k === "arrowright" ? 1 : -1)))]);
+  }
+});
+
+signinBtn.onclick = async () => {
+  try { await api.signIn(); } catch (e) { alertBar("Sign-in didn't complete: " + (e.code || e.message)); }
+};
+function alertBar(msg) {
+  const d = document.createElement("div"); d.className = "offline"; d.textContent = msg;
+  document.body.appendChild(d); setTimeout(() => d.remove(), 6000);
+}
+
+(async () => {
+  api = await connect();
+  offlineBanner(api);
+  api.onUser(() => paint());
+  let lastPoll;
+  api.onControl(c => {
+    control = c;
+    if ((c.poll || null) !== lastPoll) { lastPoll = c.poll || null; resub(); }
+    paint();
+  });
+})();
+</script>
+</body>
+</html>

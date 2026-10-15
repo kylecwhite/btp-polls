@@ -1,0 +1,33 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "live": {
+      "$sid": {
+        ".read": "$sid.matches(/^[a-z0-9-]{1,32}$/)",
+        "control": {
+          ".write": "auth != null && auth.token.email == 'kylecwhite@gmail.com' && auth.token.email_verified == true",
+          ".validate": "newData.hasChildren(['t'])",
+          "poll": { ".validate": "newData.isString() && newData.val().matches(/^p[0-9]{2}$/)" },
+          "open": { ".validate": "newData.isBoolean()" },
+          "show": { ".validate": "newData.isBoolean()" },
+          "compare": { ".validate": "newData.isBoolean()" },
+          "t": { ".validate": "newData.val() == now" },
+          "$other": { ".validate": false }
+        },
+        "votes": {
+          "$pid": {
+            ".write": "auth != null && auth.token.email == 'kylecwhite@gmail.com' && auth.token.email_verified == true",
+            "$uid": {
+              ".write": "auth != null && auth.uid == $uid && root.child('live').child($sid).child('control/poll').val() == $pid && root.child('live').child($sid).child('control/open').val() == true",
+              ".validate": "newData.hasChildren(['c', 't'])",
+              "c": { ".validate": "newData.isString() && newData.val().matches(/^[0-9](,[0-9]){0,9}$/)" },
+              "t": { ".validate": "newData.val() == now" },
+              "$other": { ".validate": false }
+            }
+          }
+        }
+      }
+    }
+  }
+}
