@@ -107,11 +107,17 @@ function render() {
 
 async function submit() {
   if (!poll || !picked.length || busy) return;
+  const target = poll.id;
   busy = true; err = ""; render();
+  const send = () => api.vote(target, picked.slice().sort((a, b) => a - b));
   try {
-    await api.vote(poll.id, picked.slice().sort((a, b) => a - b));
+    try { await send(); }
+    catch (e) { await new Promise(r => setTimeout(r, 800)); await send(); } // one quiet retry
   } catch (e) {
-    err = control.open ? "That didn't go through. Check your connection and try again." : "Voting closed before your vote arrived.";
+    const moved = control.poll !== target;
+    err = moved ? "Voting has moved on to the next question."
+      : !control.open ? "Voting closed before your vote arrived."
+      : `That didn't go through. Try again in a moment. (${e && (e.code || e.message) || "unknown"})`;
   }
   busy = false; render();
 }
@@ -122,8 +128,8 @@ function setPoll(id) {
   if (unsubVotes) { unsubVotes(); unsubVotes = null; }
   poll = next; mine = null; picked = []; err = ""; caseHidden = null;
   if (poll) {
-    const uid = api.user() && api.user().uid;
     unsubVotes = api.onVotes(poll.id, votes => {
+      const uid = api.user() && api.user().uid;
       const v = uid && votes[uid];
       const had = mine;
       mine = v ? String(v.c).split(",").map(Number) : null;

@@ -51,12 +51,16 @@ async function firebaseBackend(anonymous) {
   return {
     demo: false,
     onUser(f) { userCbs.add(f); f(user); },
-    user: () => user,
+    user: () => auth.currentUser || user,
     isAdmin: () => !!user && !user.isAnonymous && (user.email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase(),
     onConnected: f => D.onValue(D.ref(db, ".info/connected"), s => f(!!s.val())),
     onControl: f => D.onValue(D.ref(db, base + "/control"), s => f(s.val() || {})),
     onVotes: (pid, f) => D.onValue(D.ref(db, `${base}/votes/${pid}`), s => f(s.val() || {})),
-    vote: (pid, choices) => D.set(D.ref(db, `${base}/votes/${pid}/${user.uid}`), { c: choices.join(","), t: D.serverTimestamp() }),
+    // Use the live auth state, not a cached one, and sign in again if the phone has lost its ID.
+    async vote(pid, choices) {
+      if (!auth.currentUser) await A.signInAnonymously(auth);
+      return D.set(D.ref(db, `${base}/votes/${pid}/${auth.currentUser.uid}`), { c: choices.join(","), t: D.serverTimestamp() });
+    },
     setControl: patch => D.update(D.ref(db, base + "/control"), { ...patch, t: D.serverTimestamp() }),
     resetVotes: pid => D.remove(D.ref(db, `${base}/votes/${pid}`)),
     signIn: () => A.signInWithPopup(auth, new A.GoogleAuthProvider()),
