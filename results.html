@@ -32,7 +32,7 @@
 // results.html                  whichever poll is live
 // &labels=0 bars and letters only (the slide already lists the options)
 // &qr=0      no join code in the footer
-import { connect, params, pollById, tally, barsMarkup, updateBars, qrSvg, joinUrl, esc } from "./app.js";
+import { connect, params, pollById, tally, barsMarkup, updateBars, qrSvg, joinUrl, esc, applyAccent } from "./app.js";
 
 const FIXED = params.get("p");
 const SHORT = params.get("labels") === "0";
@@ -49,6 +49,7 @@ function paint() {
   const key = `${p ? p.id : ""}|${compare}`;
   if (key !== built) {
     built = key;
+    if (p) applyAccent(p.session);
     main.innerHTML = p
       ? `${compare ? `<div class="legend"><span class="prev"><i></i>First vote</span><span class="now"><i></i>Now</span></div>` : ""}${barsMarkup(p, { compare, short: SHORT })}`
       : `<div class="wait">Waiting for the next question</div>`;

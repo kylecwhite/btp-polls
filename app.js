@@ -1,24 +1,43 @@
 // Shared data layer and rendering for the voting page, presenter board and slide embed.
 import { FIREBASE_CONFIG, ADMIN_EMAIL, DEFAULT_SESSION } from "./config.js";
-import { SESSIONS } from "./polls.js";
+import { POLLS } from "./polls.js";
+export { POLLS };
 
 const FB = "https://www.gstatic.com/firebasejs/10.12.2/";
 
 export const params = new URLSearchParams(location.search);
+// One data space per course run (config.js), so a single link works for every session.
 export const SID = (params.get("s") || DEFAULT_SESSION).toLowerCase().replace(/[^a-z0-9-]/g, "");
 export const DEMO = params.has("demo") || !FIREBASE_CONFIG.apiKey;
-export const SET = SESSIONS[SID.split("-")[0]] || Object.values(SESSIONS)[0];
-export const POLLS = SET.polls;
 export const pollById = id => POLLS.find(p => p.id === id) || null;
 export const letter = i => String.fromCharCode(65 + i);
 
-// Session accent (only Session 7 for now; matches SESSION_ACCENTS in btp_template.js)
-const ACCENTS = { 7: ["#7B6FA6", "#595078", "#A9A1C5"], 8: ["#6B8FAD", "#4D677C", "#A1BACE"] };
-const acc = ACCENTS[SET.session];
-if (acc) {
+// Session titles and accents, as in BTP_Design_System.md and SESSION_ACCENTS in btp_template.js.
+// [accent, accent at 72% (primaryDark), accent tinted 35% (primaryLight)]
+export const SESSION_META = {
+  0: { title: "Reading the Evidence", accent: "#FF6B4A" },
+  1: { title: "Fluids", accent: "#5DAE8B" },
+  2: { title: "Pressors and Monitoring", accent: "#D94F30" },
+  3: { title: "The Hypoxic Patient", accent: "#4A9BD9" },
+  4: { title: "Sepsis", accent: "#E5A835" },
+  5: { title: "Renal and Metabolic", accent: "#2EC4B6" },
+  6: { title: "Neuro", accent: "#C4A962" },
+  7: { title: "Housekeeping I", accent: "#7B6FA6" },
+  8: { title: "Housekeeping II", accent: "#6B8FAD" },
+};
+const mix = (hex, f, toWhite) => "#" + [1, 3, 5].map(i => {
+  const c = parseInt(hex.slice(i, i + 2), 16);
+  return Math.round(toWhite ? c + (255 - c) * f : c * f).toString(16).padStart(2, "0");
+}).join("").toUpperCase();
+export function applyAccent(session) {
+  const m = SESSION_META[session] || SESSION_META[7];
   const s = document.documentElement.style;
-  s.setProperty("--accent", acc[0]); s.setProperty("--accent-dark", acc[1]); s.setProperty("--accent-light", acc[2]);
+  s.setProperty("--accent", m.accent);
+  s.setProperty("--accent-dark", mix(m.accent, 0.72, false));
+  s.setProperty("--accent-light", mix(m.accent, 0.35, true));
 }
+export const sessionsWithPolls = () => [...new Set(POLLS.map(p => p.session))].sort((a, b) => a - b);
+applyAccent(sessionsWithPolls()[0]);
 
 export const joinUrl = () => {
   const u = new URL("./", location.href);

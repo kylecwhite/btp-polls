@@ -38,7 +38,7 @@
     transition: border-color .15s, background .15s;
   }
   .opt .badge { background: transparent; border: 2px solid var(--accent); color: var(--accent-light); width: 32px; height: 32px; font-size: 16px; }
-  .opt[aria-pressed="true"] { border-color: var(--accent); background: rgba(123,111,166,.18); color: #fff; }
+  .opt[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent); color: #fff; }
   .opt[aria-pressed="true"] .badge { background: var(--accent); color: #fff; }
   .opt:disabled { cursor: default; }
   .submit {
@@ -59,9 +59,9 @@
 <main id="app"><div class="state"><div class="pulse"></div><p>Connecting...</p></div></main>
 
 <script type="module">
-import { connect, SET, POLLS, pollById, letter, esc, patientCard, offlineBanner } from "./app.js";
+import { connect, POLLS, pollById, letter, esc, patientCard, offlineBanner, applyAccent, SESSION_META } from "./app.js";
 
-document.getElementById("session").textContent = SET.title;
+const sessionEl = document.getElementById("session");
 const app = document.getElementById("app");
 
 let api, control = {}, poll = null, mine = null, picked = [], unsubVotes = null, busy = false, err = "", caseHidden = null;
@@ -127,6 +127,7 @@ function setPoll(id) {
   if ((next && next.id) === (poll && poll.id)) return;
   if (unsubVotes) { unsubVotes(); unsubVotes = null; }
   poll = next; mine = null; picked = []; err = ""; caseHidden = null;
+  if (poll) { applyAccent(poll.session); sessionEl.textContent = (SESSION_META[poll.session] || {}).title || ""; }
   if (poll) {
     unsubVotes = api.onVotes(poll.id, votes => {
       const uid = api.user() && api.user().uid;

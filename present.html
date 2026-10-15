@@ -37,7 +37,8 @@
   /* Presenter toolbar */
   .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 16px; background: #060E1B; border-top: 1px solid var(--border); font-size: 13px; }
   .toolbar.off { display: none; }
-  .toolbar .grp { display: flex; gap: 6px; align-items: center; }
+  .toolbar .grp { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .toolbar .grp.polls { flex: 1 1 100%; }
   .toolbar .sep { width: 1px; height: 22px; background: var(--border); margin: 0 6px; }
   .tb { padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); cursor: pointer; color: var(--fg-2); white-space: nowrap; }
   .tb:hover { border-color: var(--accent); }
@@ -57,7 +58,7 @@
 <button class="tb signin hidden" id="signin">Sign in to run polls</button>
 
 <script type="module">
-import { connect, SET, POLLS, pollById, letter, esc, tally, barsMarkup, updateBars, qrSvg, joinUrl, offlineBanner, DEMO } from "./app.js";
+import { connect, POLLS, pollById, letter, esc, tally, barsMarkup, updateBars, qrSvg, joinUrl, offlineBanner, DEMO, applyAccent, SESSION_META, sessionsWithPolls } from "./app.js";
 
 const stage = document.getElementById("stage");
 const toolbar = document.getElementById("toolbar");
@@ -66,18 +67,22 @@ const JOIN = joinUrl();
 const JOIN_TEXT = JOIN.replace(/^https?:\/\//, "").replace(/\/$/, "");
 
 let api, control = {}, votes = {}, prevVotes = {}, subs = [], built = null, toolbarHidden = false, armed = false;
+const SESSIONS = sessionsWithPolls();
+let viewSession = SESSIONS[0];  // which session's polls the toolbar lists
 
 const joinCard = () => `<div class="join">${qrSvg(JOIN, 400)}<div class="url">${esc(JOIN_TEXT)}</div><div class="cta">Scan to vote</div></div>`;
 
 function build() {
   const p = pollById(control.poll);
+  if (p && p.session !== viewSession) { viewSession = p.session; }
+  applyAccent(p ? p.session : viewSession);
   const compare = !!(p && p.compareWith && control.compare);
   const key = `${p ? p.id : ""}|${compare}`;
   if (key === built) return;
   built = key;
   if (!p) {
     stage.innerHTML = `<div class="idle"><div>
-        <div class="kicker">${esc(SET.title)}</div>
+        <div class="kicker">Beyond the Protocols${viewSession != null && SESSION_META[viewSession] ? "  ·  " + esc(SESSION_META[viewSession].title) : ""}</div>
         <h1>Join the polls</h1>
         <p>Scan the code or type the address on your phone. Keep the page open: each question appears there when voting opens.</p>
       </div>${joinCard()}</div>`;
@@ -134,11 +139,11 @@ function paintToolbar() {
   if (!admin) return;
   const p = pollById(control.poll);
   toolbar.innerHTML = `
-    <div class="grp">
+    <div class="grp polls">
       <button class="tb ${!p ? "on" : ""}" data-poll="">Join screen</button>
-      ${POLLS.map(q => `<button class="tb ${p && p.id === q.id ? "on" : ""}" data-poll="${q.id}" title="${esc(q.question)}">Slide ${q.slide}: ${esc(q.patient ? q.patient.name : "Poll " + q.n)}${q.compareWith ? " again" : ""}</button>`).join("")}
+      ${SESSIONS.length > 1 ? `<select class="tb" id="selSession">${SESSIONS.map(n => `<option value="${n}" ${n === viewSession ? "selected" : ""}>Session ${n}: ${esc((SESSION_META[n] || {}).title || "")}</option>`).join("")}</select>` : `<span class="tb" style="cursor:default">Session ${viewSession}: ${esc((SESSION_META[viewSession] || {}).title || "")}</span>`}
+      ${POLLS.filter(q => q.session === viewSession).map(q => `<button class="tb ${p && p.id === q.id ? "on" : ""}" data-poll="${q.id}" title="${esc(q.question)}">Slide ${q.slide} · ${esc(q.patient ? q.patient.name.replace("Patient ", "") : "poll")}${q.compareWith ? " again" : ""}</button>`).join("")}
     </div>
-    <span class="sep"></span>
     <div class="grp">
       <button class="tb ${control.open ? "on" : ""}" id="bOpen" ${p ? "" : "disabled"}>${control.open ? "Close voting" : "Open voting"}<kbd>O</kbd></button>
       <button class="tb ${control.show ? "on" : ""}" id="bShow" ${p ? "" : "disabled"}>${control.show ? "Hide results" : "Reveal results"}<kbd>R</kbd></button>
@@ -151,6 +156,8 @@ function paintToolbar() {
   const on = (id, f) => { const b = document.getElementById(id); if (b) b.onclick = f; };
   on("bOpen", toggleOpen); on("bShow", toggleShow); on("bCmp", toggleCompare); on("bClear", clearVotes);
   on("bOut", () => api.signOut());
+  const sel = document.getElementById("selSession");
+  if (sel) sel.onchange = () => { viewSession = +sel.value; applyAccent(viewSession); built = null; paint(); };
 }
 
 // Choosing a poll puts it on screen with voting open and results hidden.
@@ -174,7 +181,7 @@ addEventListener("keydown", e => {
   else if (k === "r") toggleShow();
   else if (k === "c") toggleCompare();
   else if (k === "arrowright" || k === "arrowleft") {
-    const ids = [null, ...POLLS.map(p => p.id)];
+    const ids = [null, ...POLLS.filter(p => p.session === viewSession).map(p => p.id)];
     const i = ids.indexOf(control.poll || null);
     choose(ids[Math.max(0, Math.min(ids.length - 1, i + (k === "arrowright" ? 1 : -1)))]);
   }
