@@ -8,7 +8,7 @@ hosted on GitHub Pages; votes are stored in the Firebase project `btp-polls`
 |---|---|---|
 | `index.html` | Attendees (phone) | Shows the live question with the patient card; one vote per phone, changeable until voting closes |
 | `present.html` | Presenter (second screen) | Join screen with QR, live board, controls. Sign in with Google to run polls |
-| `results.html` | PowerPoint Web Viewer | Bars only, scaled to the frame. `?p=s07-p01` pins a poll; `&labels=0` drops option text; `&qr=0` drops the join code |
+| `results.html` | PowerPoint (BTP Live Results add-in) | Bars on a slide, scaled to the box. In PowerPoint each box remembers its own poll, picked while editing. In a browser, `?p=s07-p01` pins a poll; `&labels=0` drops option text; `&qr=0` drops the join code |
 
 Add `?s=test` to any page for a dry run that keeps its votes apart from the real session.
 Add `?demo` to run entirely in this browser with no database (`&fill=37` seeds fake votes).
@@ -19,6 +19,15 @@ Add `?demo` to run entirely in this browser with no database (`&fill=37` seeds f
 2. Pick the poll in the toolbar: it goes live on every phone with voting open and results hidden.
 3. **R** reveals results, **O** closes or reopens voting, **C** (re-votes only) shows the first vote beside this one.
 4. **H** hides the toolbar. Left and right arrow keys step through the polls. With more than one session built in, a menu at the left of the toolbar picks the session.
+
+## Results inside PowerPoint (BTP Live Results add-in)
+
+Microsoft retired its Web Viewer add-in in December 2024, so the deck uses our own add-in: `manifest.xml`
+points PowerPoint at `results.html` on the site. Sideload once per Mac: copy `manifest.xml` into
+`~/Library/Containers/com.microsoft.Powerpoint/Data/Documents/wef/` (create `wef` if missing) and restart
+PowerPoint. Then Insert > Add-ins > My Add-ins > BTP Live Results, size the box, and choose the poll from
+the picker in its top-right corner (the picker hides in slide show). The live poll's bars stay hidden until
+you press R on the presenter board; a poll that is no longer live shows its final result.
 
 ## Files
 

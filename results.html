@@ -6,41 +6,66 @@
 <title>Beyond the Protocols: Results</title>
 <link rel="stylesheet" href="btp.css">
 <script src="qrcode.js"></script>
+<script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
 <style>
-  /* Sized for a PowerPoint Web Viewer box: everything scales with the frame width. */
+  /* Sized for a box on a slide: everything scales with --u, which fit() sets
+     from the frame size and shrinks until the content fits. */
+  :root { --u: 1vw; }
   html, body { height: 100%; overflow: hidden; background: var(--surface); }
-  body { display: grid; grid-template-rows: 1fr auto; padding: 4vw 4.5vw 3vw; gap: 3vw; }
-  .bars { --opt-size: 3.6vw; --pct-size: 4.6vw; --bar-h: 2.6vw; --row-gap: 2.6vw; align-content: center; }
-  .bars.short { --row-gap: 3.2vw; --bar-h: 3.4vw; }
-  .badge { width: 6vw; height: 6vw; font-size: 3.2vw; }
-  .legend { font-size: 2.8vw; margin-bottom: 2vw; }
-  .legend i { width: 5vw; height: 2vw; }
-  footer { display: flex; align-items: center; gap: 3vw; color: var(--muted); font-size: 2.8vw; }
-  footer b { color: #fff; font-family: var(--display); font-size: 4.2vw; font-weight: 700; margin-right: .8vw; }
-  footer .pill { font-size: 2.2vw; padding: 1vw 2vw; }
-  footer .pill .dot { width: 1.8vw; height: 1.8vw; }
-  footer .join { margin-left: auto; display: flex; align-items: center; gap: 2vw; }
-  footer .join svg { width: 11vw; height: 11vw; background: #fff; border-radius: 1vw; padding: .6vw; }
-  .wait { display: grid; place-items: center; text-align: center; color: var(--muted); font-size: 3.4vw; }
+  body { display: grid; grid-template-rows: minmax(0, 1fr) auto; padding: calc(var(--u)*3.5) calc(var(--u)*4) calc(var(--u)*2.5); gap: calc(var(--u)*2); }
+  main { min-height: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
+  .bars { --opt-size: calc(var(--u)*3.1); --pct-size: calc(var(--u)*3.4); --bar-h: calc(var(--u)*2.1); --row-gap: calc(var(--u)*1.8); }
+  .bars.short { --bar-h: calc(var(--u)*3); --row-gap: calc(var(--u)*2.4); }
+  .bar-row__label { margin-bottom: calc(var(--u)*.6); }
+  .bar-row { gap: calc(var(--u)*1.8); }
+  .badge { width: calc(var(--u)*5); height: calc(var(--u)*5); font-size: calc(var(--u)*2.6); }
+  .legend { font-size: calc(var(--u)*2.4); margin-bottom: calc(var(--u)*1.6); gap: calc(var(--u)*3); }
+  .legend i { width: calc(var(--u)*4.5); height: calc(var(--u)*1.6); }
+  footer { display: flex; align-items: center; gap: calc(var(--u)*3); color: var(--muted); font-size: calc(var(--u)*2.4); }
+  footer b { color: #fff; font-family: var(--display); font-size: calc(var(--u)*3.6); font-weight: 700; margin-right: calc(var(--u)*.8); }
+  footer .pill { font-size: calc(var(--u)*1.9); padding: calc(var(--u)*.8) calc(var(--u)*1.8); }
+  footer .pill .dot { width: calc(var(--u)*1.5); height: calc(var(--u)*1.5); }
+  footer .join { margin-left: auto; display: flex; align-items: center; gap: calc(var(--u)*2); }
+  footer .join svg { width: calc(var(--u)*10); height: calc(var(--u)*10); background: #fff; border-radius: calc(var(--u)*1); padding: calc(var(--u)*.6); }
+  .wait { display: grid; place-items: center; text-align: center; color: var(--muted); font-size: calc(var(--u)*3.4); height: 100%; }
+  /* PowerPoint add-in: poll picker, shown only while editing the deck */
+  #cfg { position: fixed; top: 1.2vw; right: 1.2vw; z-index: 10; display: flex; gap: 1vw; align-items: center;
+         background: rgba(6,14,27,.92); border: 1px solid var(--border); border-radius: 8px; padding: .8vw 1vw; font-size: 12px; }
+  #cfg select { font: 12px var(--body); background: var(--card); color: #fff; border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; max-width: 60vw; }
+  #cfg span { color: var(--muted); }
 </style>
 </head>
 <body>
+<div id="cfg" class="hidden"><span>Poll on this slide</span><select id="pick"></select></div>
 <main id="main"><div class="wait">Connecting...</div></main>
 <footer id="foot"></footer>
 <script type="module">
-// results.html?p=p01            this poll, always (one per slide)
+// results.html?p=s07-p01        this poll, always (one per slide)
 // results.html                  whichever poll is live
+// As a PowerPoint add-in (manifest.xml) each instance remembers its own poll,
+// chosen from the picker that shows while editing and hides in slide show.
 // &labels=0 bars and letters only (the slide already lists the options)
 // &qr=0      no join code in the footer
-import { connect, params, pollById, tally, barsMarkup, updateBars, qrSvg, joinUrl, esc, applyAccent } from "./app.js";
+import { connect, params, pollById, tally, barsMarkup, updateBars, qrSvg, joinUrl, esc, applyAccent, POLLS, SESSION_META } from "./app.js";
 
-const FIXED = params.get("p");
+let FIXED = params.get("p");
 const SHORT = params.get("labels") === "0";
 const QR = params.get("qr") !== "0";
 const main = document.getElementById("main"), foot = document.getElementById("foot");
-let api, control = {}, votes = {}, prevVotes = {}, subs = [], built = null;
+let api, control = {}, votes = {}, prevVotes = {}, subs = [], built = null, last;
 
 const pid = () => FIXED || control.poll || null;
+
+// Largest size that fits the frame: start from width (16:9) and shrink until nothing overflows.
+function fit() {
+  const root = document.documentElement.style;
+  let u = Math.min(innerWidth / 100, innerHeight / 56.25);
+  root.setProperty("--u", u + "px");
+  for (let i = 0; i < 25 && (main.scrollHeight > main.clientHeight + 1 || document.body.scrollHeight > innerHeight + 1); i++) {
+    u *= 0.95; root.setProperty("--u", u + "px");
+  }
+}
+addEventListener("resize", () => fit());
 
 function paint() {
   const p = pollById(pid());
@@ -54,6 +79,7 @@ function paint() {
       ? `${compare ? `<div class="legend"><span class="prev"><i></i>First vote</span><span class="now"><i></i>Now</span></div>` : ""}${barsMarkup(p, { compare, short: SHORT })}`
       : `<div class="wait">Waiting for the next question</div>`;
     if (SHORT) main.querySelector(".bars")?.classList.add("short");
+    requestAnimationFrame(fit);
     foot.innerHTML = `<span><b id="n">0</b><span id="nl">votes</span></span><span class="pill" id="pill"><span class="dot"></span><span id="pt"></span></span>
       ${QR ? `<span class="join">${qrSvg(joinUrl(), 220)}<span>${esc(joinUrl().replace(/^https?:\/\//, "").replace(/\/$/, ""))}</span></span>` : ""}`;
   }
@@ -77,9 +103,32 @@ function resub() {
   if (p.compareWith) subs.push(api.onVotes(p.compareWith, v => { prevVotes = v; paint(); }));
 }
 
+// ---------- PowerPoint add-in mode ----------
+async function officeSetup() {
+  if (!window.Office) return;
+  const info = await Promise.race([Office.onReady(), new Promise(r => setTimeout(() => r(null), 4000))]);
+  if (!info || !info.host) return;              // plain browser: nothing to do
+  const settings = Office.context.document.settings;
+  const saved = settings.get("poll");
+  if (saved !== null && saved !== undefined) FIXED = saved || null;
+  const cfg = document.getElementById("cfg"), pick = document.getElementById("pick");
+  pick.innerHTML = `<option value="">Follow whichever poll is live</option>` + POLLS.map(p =>
+    `<option value="${p.id}" ${p.id === FIXED ? "selected" : ""}>S${p.session} slide ${p.slide}: ${esc(p.patient ? p.patient.name + ". " : "")}${esc(p.question.slice(0, 50))}</option>`).join("");
+  pick.onchange = () => {
+    FIXED = pick.value || null;
+    settings.set("poll", pick.value);
+    settings.saveAsync(() => {});
+    built = null;
+    if (api) { last = pid(); resub(); paint(); }
+  };
+  const showFor = view => cfg.classList.toggle("hidden", view !== "edit");
+  Office.context.document.getActiveViewAsync(r => showFor(r.value));
+  try { Office.context.document.addHandlerAsync(Office.EventType.ActiveViewChanged, e => showFor(e.activeView)); } catch (e) {}
+}
+
 (async () => {
+  await officeSetup();
   api = await connect();
-  let last;
   api.onControl(c => {
     control = c;
     if (pid() !== last) { last = pid(); resub(); }

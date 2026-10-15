@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- BTP Live Results: a PowerPoint content add-in that shows live poll results on a slide.
+     Sideload on a Mac by copying this file to
+     ~/Library/Containers/com.microsoft.Powerpoint/Data/Documents/wef/
+     then restarting PowerPoint (Insert > Add-ins > My Add-ins). -->
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:type="ContentApp">
+  <Id>5f8c7bf5-0483-4281-b781-b904ccc875a5</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>Beyond the Protocols</ProviderName>
+  <DefaultLocale>en-AU</DefaultLocale>
+  <DisplayName DefaultValue="BTP Live Results" />
+  <Description DefaultValue="Live poll results from the Beyond the Protocols polling site, shown on the slide." />
+  <IconUrl DefaultValue="https://kylecwhite.github.io/btp-polls/icon-32.png" />
+  <HighResolutionIconUrl DefaultValue="https://kylecwhite.github.io/btp-polls/icon-64.png" />
+  <SupportUrl DefaultValue="https://kylecwhite.github.io/btp-polls/" />
+  <AppDomains>
+    <AppDomain>https://kylecwhite.github.io</AppDomain>
+  </AppDomains>
+  <Hosts>
+    <Host Name="Presentation" />
+  </Hosts>
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://kylecwhite.github.io/btp-polls/results.html?qr=0" />
+    <RequestedWidth>720</RequestedWidth>
+    <RequestedHeight>400</RequestedHeight>
+  </DefaultSettings>
+  <Permissions>ReadWriteDocument</Permissions>
+  <AllowSnapshot>true</AllowSnapshot>
+</OfficeApp>
