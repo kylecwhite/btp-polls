@@ -28,15 +28,27 @@
   footer .join { margin-left: auto; display: flex; align-items: center; gap: calc(var(--u)*2); }
   footer .join svg { width: calc(var(--u)*10); height: calc(var(--u)*10); background: #fff; border-radius: calc(var(--u)*1); padding: calc(var(--u)*.6); }
   .wait { display: grid; place-items: center; text-align: center; color: var(--muted); font-size: calc(var(--u)*3.4); height: 100%; }
-  /* PowerPoint add-in: poll picker, shown only while editing the deck */
-  #cfg { position: fixed; top: 1.2vw; right: 1.2vw; z-index: 10; display: flex; gap: 1vw; align-items: center;
-         background: rgba(6,14,27,.92); border: 1px solid var(--border); border-radius: 8px; padding: .8vw 1vw; font-size: 12px; }
-  #cfg select { font: 12px var(--body); background: var(--card); color: #fff; border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; max-width: 60vw; }
-  #cfg span { color: var(--muted); }
+  /* Patient card on the left, as on the question slide */
+  .split { display: grid; grid-template-columns: calc(var(--u)*30) minmax(0, 1fr); gap: calc(var(--u)*4); align-items: center; }
+  .split .patient { border-radius: calc(var(--u)*1.2); }
+  .split .patient__head { justify-content: center; padding: calc(var(--u)*1.6) calc(var(--u)*2); }
+  .split .patient__name { font-size: calc(var(--u)*2.2); }
+  .split .patient__when { font-size: calc(var(--u)*1.6); }
+  .split .patient__body { padding: calc(var(--u)*2) calc(var(--u)*2.4) calc(var(--u)*2.4); font-size: calc(var(--u)*2); line-height: 1.45; }
+  .split .patient__body .gap { height: calc(var(--u)*1.4); }
+  .split .patient__tag { display: block; text-align: center; margin-top: calc(var(--u)*2.2); padding: calc(var(--u)*1) calc(var(--u)*1.6); font-size: calc(var(--u)*1.5); border-radius: calc(var(--u)*.8); }
+  .split .when { color: var(--accent-light); font-size: calc(var(--u)*1.7); font-weight: 700; letter-spacing: .14em; text-transform: uppercase; margin: 0 0 calc(var(--u)*1); }
+  /* PowerPoint add-in: small settings chip, bottom right, only while editing the deck */
+  #cfg { position: fixed; right: 8px; bottom: 8px; z-index: 10; display: flex; gap: 8px; align-items: center;
+         background: rgba(6,14,27,.9); border: 1px solid var(--border); border-radius: 7px; padding: 4px 6px;
+         font-size: 11px; opacity: .55; transition: opacity .15s; }
+  #cfg:hover, #cfg:focus-within { opacity: 1; }
+  #cfg select { font: 11px var(--body); background: var(--card); color: #fff; border: 1px solid var(--border); border-radius: 5px; padding: 2px 4px; max-width: 30vw; }
+  #cfg label { color: var(--muted); display: flex; align-items: center; gap: 4px; cursor: pointer; white-space: nowrap; }
 </style>
 </head>
 <body>
-<div id="cfg" class="hidden"><span>Poll on this slide</span><select id="pick"></select></div>
+<div id="cfg" class="hidden"><select id="pick" title="Poll shown in this box"></select><label title="Show the patient card beside the results"><input type="checkbox" id="showCase">Case</label></div>
 <main id="main"><div class="wait">Connecting...</div></main>
 <footer id="foot"></footer>
 <script type="module">
@@ -46,11 +58,13 @@
 // chosen from the picker that shows while editing and hides in slide show.
 // &labels=0 bars and letters only (the slide already lists the options)
 // &qr=0      no join code in the footer
-import { connect, params, pollById, tally, barsMarkup, updateBars, qrSvg, joinUrl, esc, applyAccent, POLLS, SESSION_META } from "./app.js";
+// &case=0    no patient card on the left
+import { connect, params, pollById, tally, barsMarkup, updateBars, qrSvg, joinUrl, esc, applyAccent, patientCard, POLLS, SESSION_META } from "./app.js";
 
 let FIXED = params.get("p");
 const SHORT = params.get("labels") === "0";
 const QR = params.get("qr") !== "0";
+let CASE = params.get("case") !== "0";
 const main = document.getElementById("main"), foot = document.getElementById("foot");
 let api, control = {}, votes = {}, prevVotes = {}, subs = [], built = null, last;
 
@@ -71,13 +85,15 @@ function paint() {
   const p = pollById(pid());
   const live = !!p && control.poll === p.id;
   const compare = !!(p && p.compareWith && live && control.compare);
-  const key = `${p ? p.id : ""}|${compare}`;
+  const key = `${p ? p.id : ""}|${compare}|${CASE}`;
   if (key !== built) {
     built = key;
     if (p) applyAccent(p.session);
-    main.innerHTML = p
-      ? `${compare ? `<div class="legend"><span class="prev"><i></i>First vote</span><span class="now"><i></i>Now</span></div>` : ""}${barsMarkup(p, { compare, short: SHORT })}`
-      : `<div class="wait">Waiting for the next question</div>`;
+    const results = p ? `${compare ? `<div class="legend"><span class="prev"><i></i>First vote</span><span class="now"><i></i>Now</span></div>` : ""}${barsMarkup(p, { compare, short: SHORT })}` : "";
+    main.innerHTML = !p ? `<div class="wait">Waiting for the next question</div>`
+      : CASE && p.patient
+        ? `<div class="split"><div>${p.label ? `<div class="when">${esc(p.label)}</div>` : ""}${patientCard(p)}</div><div>${results}</div></div>`
+        : results;
     if (SHORT) main.querySelector(".bars")?.classList.add("short");
     requestAnimationFrame(fit);
     foot.innerHTML = `<span><b id="n">0</b><span id="nl">votes</span></span><span class="pill" id="pill"><span class="dot"></span><span id="pt"></span></span>
@@ -111,15 +127,24 @@ async function officeSetup() {
   const settings = Office.context.document.settings;
   const saved = settings.get("poll");
   if (saved !== null && saved !== undefined) FIXED = saved || null;
-  const cfg = document.getElementById("cfg"), pick = document.getElementById("pick");
-  pick.innerHTML = `<option value="">Follow whichever poll is live</option>` + POLLS.map(p =>
-    `<option value="${p.id}" ${p.id === FIXED ? "selected" : ""}>S${p.session} slide ${p.slide}: ${esc(p.patient ? p.patient.name + ". " : "")}${esc(p.question.slice(0, 50))}</option>`).join("");
+  const savedCase = settings.get("case");
+  if (savedCase !== null && savedCase !== undefined) CASE = savedCase !== "0";
+  const cfg = document.getElementById("cfg"), pick = document.getElementById("pick"), box = document.getElementById("showCase");
+  pick.innerHTML = `<option value="">Follow the live poll</option>` + POLLS.map(p =>
+    `<option value="${p.id}" ${p.id === FIXED ? "selected" : ""} title="${esc(p.question)}">S${p.session} slide ${p.slide}${p.patient ? ": " + esc(p.patient.name) : ""}${p.compareWith ? " (again)" : ""}</option>`).join("");
+  box.checked = CASE;
+  const save = () => settings.saveAsync(() => {});
   pick.onchange = () => {
     FIXED = pick.value || null;
-    settings.set("poll", pick.value);
-    settings.saveAsync(() => {});
+    settings.set("poll", pick.value); save();
     built = null;
     if (api) { last = pid(); resub(); paint(); }
+  };
+  box.onchange = () => {
+    CASE = box.checked;
+    settings.set("case", CASE ? "1" : "0"); save();
+    built = null;
+    if (api) paint();
   };
   const showFor = view => cfg.classList.toggle("hidden", view !== "edit");
   Office.context.document.getActiveViewAsync(r => showFor(r.value));
