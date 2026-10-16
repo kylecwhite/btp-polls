@@ -23,17 +23,16 @@ export const POLLS = [
       "tag": "MEDICAL"
     },
     "context": null,
-    "question": "Which agent, and which target, do you write on the chart?",
+    "question": "What sedation order do you write?",
     "options": [
-      "Propofol, RASS 0 to minus 1",
-      "Propofol, RASS minus 2 to minus 3",
-      "Dexmedetomidine, RASS 0 to minus 1",
-      "Propofol plus dexmedetomidine, RASS minus 1 to minus 2",
-      "Midazolam-based, RASS minus 3 to minus 4",
-      "I would not write a target"
+      "Propofol, no target written",
+      "Propofol, light: RASS 0 to minus 2",
+      "Propofol, deeper: RASS minus 3 or below",
+      "Dexmedetomidine, alone or with propofol, light",
+      "Anything with midazolam in it"
     ],
     "multi": false,
-    "deck": "BTP_07_Housekeeping_I_AB_v5"
+    "deck": "BTP_07_Housekeeping_I_AB_v8"
   },
   {
     "id": "s07-p02",
@@ -47,10 +46,9 @@ export const POLLS = [
       "lines": [
         "63-year-old man",
         "Influenza pneumonitis",
-        "PaO2/FiO2 80, PEEP 14",
+        "Severe respiratory failure",
         "",
-        "Proned this afternoon",
-        "Cisatracurium infusion",
+        "PaO2/FiO2 80, PEEP 14",
         "Noradrenaline 22 mcg/min",
         "",
         "Lactate 3.1, rising"
@@ -58,17 +56,17 @@ export const POLLS = [
       "tag": "SEVERE ARDS"
     },
     "context": null,
-    "question": "Which agent, and which target, do you write on the chart?",
+    "question": "What sedation order do you write?",
     "options": [
-      "Propofol alone, RASS minus 4 to minus 5",
-      "Propofol plus midazolam, RASS minus 4 to minus 5",
-      "Propofol plus ketamine, RASS minus 4 to minus 5",
-      "Midazolam-based, RASS minus 5",
-      "Inhaled volatile",
-      "I would not write a target while he is paralysed"
+      "Propofol, no target written",
+      "Propofol, light: RASS 0 to minus 2",
+      "Propofol, deep: RASS minus 4 to minus 5",
+      "Propofol plus midazolam or ketamine, deep",
+      "Midazolam-based, deep",
+      "Inhaled volatile"
     ],
     "multi": false,
-    "deck": "BTP_07_Housekeeping_I_AB_v5"
+    "deck": "BTP_07_Housekeeping_I_AB_v8"
   },
   {
     "id": "s07-p03",
@@ -97,13 +95,13 @@ export const POLLS = [
       "Ask the nurse what she thinks"
     ],
     "multi": false,
-    "deck": "BTP_07_Housekeeping_I_AB_v5"
+    "deck": "BTP_07_Housekeeping_I_AB_v8"
   },
   {
     "id": "s07-p04",
     "session": 7,
     "n": 4,
-    "slide": 24,
+    "slide": 22,
     "label": "DAY ONE, 22:00",
     "patient": {
       "name": "Patient A",
@@ -132,32 +130,32 @@ export const POLLS = [
       "Add midazolam, he is going to need deep sedation anyway"
     ],
     "multi": false,
-    "deck": "BTP_07_Housekeeping_I_AB_v5"
+    "deck": "BTP_07_Housekeeping_I_AB_v8"
   },
   {
     "id": "s07-p05",
     "session": 7,
     "n": 5,
-    "slide": 32,
+    "slide": 33,
     "label": "POLLING QUESTION",
     "patient": null,
     "context": "All five are on propofol now. Choose all that apply",
     "question": "Which of these would you give midazolam to?",
     "options": [
-      "REFRACTORY SHOCK: 62, faecal peritonitis, day 2. Noradrenaline 40 plus vasopressin. Propofol drops the MAP",
-      "DEEP SEDATION, PARALYSIS: Patient C. Prone, cisatracurium. Propofol 400 mg/hr, triglycerides 4.8 and rising",
-      "ALCOHOL WITHDRAWAL: The guest. 100 g/day, last drink 36 hours ago, breaking through propofol 200 mg/hr",
-      "ON ECMO: 34, VV-ECMO day 3. Requirement climbing daily as the circuit sequesters the drug",
+      "SEPTIC SHOCK: 62, faecal peritonitis, day 2. Noradrenaline 40 plus vasopressin",
+      "DEEP SEDATION, PARALYSIS: 58, severe ARDS, proned and paralysed. Propofol 400 mg/hr, triglycerides 4.8 and rising",
+      "ALCOHOL WITHDRAWAL: The guest. 100 g/day, last drink 36 hours ago, on propofol 200 mg/hr",
+      "ON ECMO: 34, VV-ECMO day 3, on propofol 300 mg/hr",
       "03:00 DYSSYNCHRONY: Patient A. Stable and improving. 5 mg/hr added overnight, never revisited"
     ],
     "multi": true,
-    "deck": "BTP_07_Housekeeping_I_AB_v5"
+    "deck": "BTP_07_Housekeeping_I_AB_v8"
   },
   {
     "id": "s07-p06",
     "session": 7,
     "n": 6,
-    "slide": 37,
+    "slide": 42,
     "label": "DAY THREE",
     "patient": {
       "name": "Patient A",
@@ -180,13 +178,13 @@ export const POLLS = [
       "Score the pain first, then decide"
     ],
     "multi": false,
-    "deck": "BTP_07_Housekeeping_I_AB_v5"
+    "deck": "BTP_07_Housekeeping_I_AB_v8"
   },
   {
     "id": "s07-p07",
     "session": 7,
     "n": 7,
-    "slide": 43,
+    "slide": 48,
     "label": "HOUR TWO, AGAIN",
     "patient": {
       "name": "Patient A",
@@ -205,24 +203,23 @@ export const POLLS = [
       "tag": "MEDICAL"
     },
     "context": null,
-    "question": "Same patient, same hour. Which agent and which target do you write now?",
+    "question": "Same patient, same hour. What sedation order do you write now?",
     "options": [
-      "Propofol, RASS 0 to minus 1",
-      "Propofol, RASS minus 2 to minus 3",
-      "Dexmedetomidine, RASS 0 to minus 1",
-      "Propofol plus dexmedetomidine, RASS minus 1 to minus 2",
-      "Midazolam-based, RASS minus 3 to minus 4",
-      "I would not write a target"
+      "Propofol, no target written",
+      "Propofol, light: RASS 0 to minus 2",
+      "Propofol, deeper: RASS minus 3 or below",
+      "Dexmedetomidine, alone or with propofol, light",
+      "Anything with midazolam in it"
     ],
     "multi": false,
-    "deck": "BTP_07_Housekeeping_I_AB_v5",
+    "deck": "BTP_07_Housekeeping_I_AB_v8",
     "compareWith": "s07-p01"
   },
   {
     "id": "s07-p08",
     "session": 7,
     "n": 8,
-    "slide": 44,
+    "slide": 49,
     "label": "HOUR TWO, AGAIN",
     "patient": {
       "name": "Patient C",
@@ -230,10 +227,9 @@ export const POLLS = [
       "lines": [
         "63-year-old man",
         "Influenza pneumonitis",
-        "PaO2/FiO2 80, PEEP 14",
+        "Severe respiratory failure",
         "",
-        "Proned this afternoon",
-        "Cisatracurium infusion",
+        "PaO2/FiO2 80, PEEP 14",
         "Noradrenaline 22 mcg/min",
         "",
         "Lactate 3.1, rising"
@@ -241,24 +237,24 @@ export const POLLS = [
       "tag": "SEVERE ARDS"
     },
     "context": null,
-    "question": "Same patient, same hour. Which agent and which target do you write now?",
+    "question": "Same patient, same hour. What sedation order do you write now?",
     "options": [
-      "Propofol alone, RASS minus 4 to minus 5",
-      "Propofol plus midazolam, RASS minus 4 to minus 5",
-      "Propofol plus ketamine, RASS minus 4 to minus 5",
-      "Midazolam-based, RASS minus 5",
-      "Inhaled volatile",
-      "I would not write a target while he is paralysed"
+      "Propofol, no target written",
+      "Propofol, light: RASS 0 to minus 2",
+      "Propofol, deep: RASS minus 4 to minus 5",
+      "Propofol plus midazolam or ketamine, deep",
+      "Midazolam-based, deep",
+      "Inhaled volatile"
     ],
     "multi": false,
-    "deck": "BTP_07_Housekeeping_I_AB_v5",
+    "deck": "BTP_07_Housekeeping_I_AB_v8",
     "compareWith": "s07-p02"
   },
   {
     "id": "s07-p09",
     "session": 7,
     "n": 9,
-    "slide": 48,
+    "slide": 53,
     "label": "DAY NINE",
     "patient": {
       "name": "Patient B",
@@ -288,13 +284,13 @@ export const POLLS = [
       "Nothing pharmacological. Non-pharmacological measures only"
     ],
     "multi": false,
-    "deck": "BTP_07_Housekeeping_I_AB_v5"
+    "deck": "BTP_07_Housekeeping_I_AB_v8"
   },
   {
     "id": "s07-p10",
     "session": 7,
     "n": 10,
-    "slide": 53,
+    "slide": 58,
     "label": "POLLING QUESTION",
     "patient": null,
     "context": "Choose all that apply",
@@ -307,13 +303,13 @@ export const POLLS = [
       "Reorientation, clocks, daylight, cognitive stimulation"
     ],
     "multi": true,
-    "deck": "BTP_07_Housekeeping_I_AB_v5"
+    "deck": "BTP_07_Housekeeping_I_AB_v8"
   },
   {
     "id": "s07-p11",
     "session": 7,
     "n": 11,
-    "slide": 65,
+    "slide": 74,
     "label": "DAY SIX, 02:00",
     "patient": {
       "name": "Patient K",
@@ -344,13 +340,13 @@ export const POLLS = [
       "Nothing pharmacological. Look for the cause"
     ],
     "multi": false,
-    "deck": "BTP_07_Housekeeping_I_AB_v5"
+    "deck": "BTP_07_Housekeeping_I_AB_v8"
   },
   {
     "id": "s07-p12",
     "session": 7,
     "n": 12,
-    "slide": 77,
+    "slide": 88,
     "label": "APPLY IT",
     "patient": {
       "name": "Patient J",
@@ -381,13 +377,13 @@ export const POLLS = [
       "Start dexmedetomidine"
     ],
     "multi": false,
-    "deck": "BTP_07_Housekeeping_I_AB_v5"
+    "deck": "BTP_07_Housekeeping_I_AB_v8"
   },
   {
     "id": "s07-p13",
     "session": 7,
     "n": 13,
-    "slide": 78,
+    "slide": 89,
     "label": "DAY SIX, AGAIN",
     "patient": {
       "name": "Patient K",
@@ -418,13 +414,13 @@ export const POLLS = [
       "Nothing pharmacological. Find the cause"
     ],
     "multi": false,
-    "deck": "BTP_07_Housekeeping_I_AB_v5"
+    "deck": "BTP_07_Housekeeping_I_AB_v8"
   },
   {
     "id": "s07-p14",
     "session": 7,
     "n": 14,
-    "slide": 79,
+    "slide": 90,
     "label": "DAY NINE, AGAIN",
     "patient": {
       "name": "Patient B",
@@ -454,7 +450,7 @@ export const POLLS = [
       "Nothing pharmacological. Non-pharmacological measures only"
     ],
     "multi": false,
-    "deck": "BTP_07_Housekeeping_I_AB_v5",
+    "deck": "BTP_07_Housekeeping_I_AB_v8",
     "compareWith": "s07-p09"
   }
 ];

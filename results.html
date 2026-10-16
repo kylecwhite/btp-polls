@@ -13,7 +13,14 @@
   :root { --u: 1vw; }
   html, body { height: 100%; overflow: hidden; background: var(--surface); }
   body { display: grid; grid-template-rows: minmax(0, 1fr) auto; padding: calc(var(--u)*3.5) calc(var(--u)*4) calc(var(--u)*2.5); gap: calc(var(--u)*2); }
-  main { min-height: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
+  main { min-height: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-start; }
+  /* Centred with auto margins, which never push overflow above the top edge (justify-content: center clipped A and E) */
+  main > :first-child { margin-top: auto; } main > :last-child { margin-bottom: auto; }
+  /* Question heading, so the poll needs no separate question slide */
+  .q { font-family: var(--display); font-weight: 400; font-size: calc(var(--u)*4); line-height: 1.2; color: #fff; margin: 0 0 calc(var(--u)*.7); }
+  .qctx { color: var(--muted); font-style: italic; font-size: calc(var(--u)*1.9); margin: 0 0 calc(var(--u)*2.2); }
+  .qwrap { margin-bottom: calc(var(--u)*2.2); }
+  .qwrap .qctx { margin-bottom: 0; }
   .bars { --opt-size: calc(var(--u)*3.1); --pct-size: calc(var(--u)*3.4); --bar-h: calc(var(--u)*2.1); --row-gap: calc(var(--u)*1.8); }
   .bars.short { --bar-h: calc(var(--u)*3); --row-gap: calc(var(--u)*2.4); }
   .bar-row__label { margin-bottom: calc(var(--u)*.6); }
@@ -71,15 +78,39 @@ let api, control = {}, votes = {}, prevVotes = {}, subs = [], built = null, last
 const pid = () => FIXED || control.poll || null;
 
 // Largest size that fits the frame: start from width (16:9) and shrink until nothing overflows.
+// Binary search on --u so it always lands on the largest size that fits,
+// and re-run whenever the frame, the fonts or the content change (PowerPoint
+// can resize the box when the slide show starts without a resize event).
+const overflows = () => {
+  const c = main.firstElementChild;
+  const h = c ? c.scrollHeight : main.scrollHeight;
+  return h > main.clientHeight + 1 || main.scrollHeight > main.clientHeight + 1 ||
+         document.body.scrollHeight > innerHeight + 1 || document.body.scrollWidth > innerWidth + 1;
+};
+let fitting = false, lastFit = "";
 function fit() {
+  if (fitting || !innerWidth || !innerHeight) return;
+  fitting = true;
   const root = document.documentElement.style;
-  let u = Math.min(innerWidth / 100, innerHeight / 56.25);
-  root.setProperty("--u", u + "px");
-  for (let i = 0; i < 25 && (main.scrollHeight > main.clientHeight + 1 || document.body.scrollHeight > innerHeight + 1); i++) {
-    u *= 0.95; root.setProperty("--u", u + "px");
+  let hi = Math.min(innerWidth / 100, innerHeight / 56.25), lo = hi * 0.2;
+  root.setProperty("--u", hi + "px");
+  if (overflows()) {
+    for (let i = 0; i < 14; i++) {
+      const mid = (lo + hi) / 2;
+      root.setProperty("--u", mid + "px");
+      if (overflows()) hi = mid; else lo = mid;
+    }
+    root.setProperty("--u", lo + "px");
   }
+  lastFit = innerWidth + "x" + innerHeight;
+  fitting = false;
 }
 addEventListener("resize", () => fit());
+try { new ResizeObserver(() => requestAnimationFrame(fit)).observe(document.body); } catch (e) {}
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fit());
+document.addEventListener("visibilitychange", () => requestAnimationFrame(fit));
+// Belt and braces: if the frame changed or anything overflows, fit again.
+setInterval(() => { if (lastFit !== innerWidth + "x" + innerHeight || overflows()) fit(); }, 1000);
 
 function paint() {
   const p = pollById(pid());
@@ -89,7 +120,8 @@ function paint() {
   if (key !== built) {
     built = key;
     if (p) applyAccent(p.session);
-    const results = p ? `${compare ? `<div class="legend"><span class="prev"><i></i>First vote</span><span class="now"><i></i>Now</span></div>` : ""}${barsMarkup(p, { compare, short: SHORT })}` : "";
+    const head = p ? `<div class="qwrap"><h1 class="q">${esc(p.question)}</h1>${p.context ? `<p class="qctx">${esc(p.context)}</p>` : ""}</div>` : "";
+    const results = p ? `${head}${compare ? `<div class="legend"><span class="prev"><i></i>First vote</span><span class="now"><i></i>Now</span></div>` : ""}${barsMarkup(p, { compare, short: SHORT })}` : "";
     main.innerHTML = !p ? `<div class="wait">Waiting for the next question</div>`
       : CASE && p.patient
         ? `<div class="split"><div>${p.label ? `<div class="when">${esc(p.label)}</div>` : ""}${patientCard(p)}</div><div>${results}</div></div>`
