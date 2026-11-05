@@ -8,11 +8,16 @@
 <script src="qrcode.js"></script>
 <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
 <style>
-  /* Sized for a box on a slide: everything scales with --u, which fit() sets
-     from the frame size and shrinks until the content fits. */
-  :root { --u: 1vw; }
-  html, body { height: 100%; overflow: hidden; background: var(--surface); }
-  body { display: grid; grid-template-rows: minmax(0, 1fr) auto; padding: calc(var(--u)*3.5) calc(var(--u)*4) calc(var(--u)*2.5); gap: calc(var(--u)*2); }
+  /* v2 (6 Nov 2026): laid out once on a fixed 1600 x 900 stage, then the whole
+     stage is scaled to the box with a transform. The layout no longer depends
+     on the size PowerPoint reports for the box (it changes when the slide show
+     starts, which is what cut text off at the top and bottom), so it cannot
+     reflow when results are revealed. fit() only shrinks --u when a poll has
+     too much text for the stage. */
+  :root { --u: 16px; }
+  html, body { height: 100%; margin: 0; overflow: hidden; background: var(--surface); }
+  #stage { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; transform-origin: 0 0;
+           display: grid; grid-template-rows: minmax(0, 1fr) auto; padding: calc(var(--u)*3.5) calc(var(--u)*4) calc(var(--u)*2.5); gap: calc(var(--u)*2); box-sizing: border-box; }
   main { min-height: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-start; }
   /* Centred with auto margins, which never push overflow above the top edge (justify-content: center clipped A and E) */
   main > :first-child { margin-top: auto; } main > :last-child { margin-bottom: auto; }
@@ -56,8 +61,10 @@
 </head>
 <body>
 <div id="cfg" class="hidden"><select id="pick" title="Poll shown in this box"></select><label title="Show the patient card beside the results"><input type="checkbox" id="showCase">Case</label></div>
+<div id="stage">
 <main id="main"><div class="wait">Connecting...</div></main>
 <footer id="foot"></footer>
+</div>
 <script type="module">
 // results.html?p=s07-p01        this poll, always (one per slide)
 // results.html                  whichever poll is live
@@ -77,22 +84,23 @@ let api, control = {}, votes = {}, prevVotes = {}, subs = [], built = null, last
 
 const pid = () => FIXED || control.poll || null;
 
-// Largest size that fits the frame: start from width (16:9) and shrink until nothing overflows.
-// Binary search on --u so it always lands on the largest size that fits,
-// and re-run whenever the frame, the fonts or the content change (PowerPoint
-// can resize the box when the slide show starts without a resize event).
+// Fit on the fixed stage: --u starts at 16px (the stage is 100 units wide)
+// and a binary search shrinks it only when the content overflows. Then the
+// stage is scaled and centred in whatever box PowerPoint gives us.
+const stage = document.getElementById("stage");
+const SW = 1600, SH = 900, U = 16;
 const overflows = () => {
   const c = main.firstElementChild;
   const h = c ? c.scrollHeight : main.scrollHeight;
   return h > main.clientHeight + 1 || main.scrollHeight > main.clientHeight + 1 ||
-         document.body.scrollHeight > innerHeight + 1 || document.body.scrollWidth > innerWidth + 1;
+         stage.scrollHeight > SH + 1 || stage.scrollWidth > SW + 1;
 };
-let fitting = false, lastFit = "";
+let fitting = false, lastScale = "";
 function fit() {
-  if (fitting || !innerWidth || !innerHeight) return;
+  if (fitting) return;
   fitting = true;
   const root = document.documentElement.style;
-  let hi = Math.min(innerWidth / 100, innerHeight / 56.25), lo = hi * 0.2;
+  let hi = U, lo = U * 0.3;
   root.setProperty("--u", hi + "px");
   if (overflows()) {
     for (let i = 0; i < 14; i++) {
@@ -102,15 +110,22 @@ function fit() {
     }
     root.setProperty("--u", lo + "px");
   }
-  lastFit = innerWidth + "x" + innerHeight;
   fitting = false;
+  scale();
 }
-addEventListener("resize", () => fit());
-try { new ResizeObserver(() => requestAnimationFrame(fit)).observe(document.body); } catch (e) {}
+function scale() {
+  const w = innerWidth, h = innerHeight;
+  if (!w || !h) return;
+  const k = Math.min(w / SW, h / SH);
+  stage.style.transform = `translate(${(w - SW * k) / 2}px, ${(h - SH * k) / 2}px) scale(${k})`;
+  lastScale = w + "x" + h;
+}
+addEventListener("resize", scale);
+try { new ResizeObserver(() => requestAnimationFrame(scale)).observe(document.documentElement); } catch (e) {}
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fit());
-document.addEventListener("visibilitychange", () => requestAnimationFrame(fit));
-// Belt and braces: if the frame changed or anything overflows, fit again.
-setInterval(() => { if (lastFit !== innerWidth + "x" + innerHeight || overflows()) fit(); }, 1000);
+document.addEventListener("visibilitychange", () => requestAnimationFrame(scale));
+// Belt and braces: rescale if the box changed, refit if anything overflows.
+setInterval(() => { if (lastScale !== innerWidth + "x" + innerHeight) scale(); if (overflows()) fit(); }, 500);
 
 function paint() {
   const p = pollById(pid());
@@ -136,6 +151,7 @@ function paint() {
   const prev = compare ? tally(prevVotes, p.options.length) : null;
   // A poll that isn't live any more shows its final result; the live one obeys Reveal.
   updateBars(main, now, prev, { hidden: live && !control.show });
+  requestAnimationFrame(fit);
   document.getElementById("n").textContent = now.n;
   document.getElementById("nl").textContent = now.n === 1 ? "vote" : "votes";
   const open = live && !!control.open;

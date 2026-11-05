@@ -452,5 +452,261 @@ export const POLLS = [
     "multi": false,
     "deck": "BTP_07_Housekeeping_I_AB_v8",
     "compareWith": "s07-p09"
+  },
+  {
+    "id": "s08-p01",
+    "session": 8,
+    "n": 1,
+    "slide": 4,
+    "label": "DAY ONE",
+    "patient": {
+      "name": "Patient M",
+      "when": "Day 1",
+      "lines": [
+        "62-year-old woman",
+        "Faecal peritonitis,",
+        "laparotomy 6 hours ago",
+        "",
+        "Noradrenaline 25 mcg/min",
+        "and climbing",
+        "Lactate 4.1",
+        "",
+        "Nil by mouth. The dietitian",
+        "has flagged her for",
+        "feeding in the morning"
+      ],
+      "tag": "SHOCKED, NOT YET FED"
+    },
+    "context": null,
+    "question": "The dietitian has flagged her for the morning. What do you write?",
+    "options": [
+      "Feed in the morning, build to target",
+      "Trophic enteral feed only",
+      "Hold until the noradrenaline falls",
+      "Parenteral nutrition instead",
+      "Leave it to the unit protocol"
+    ],
+    "multi": false,
+    "deck": "BTP_08_Housekeeping_II_ABC_v6"
+  },
+  {
+    "id": "s08-p02",
+    "session": 8,
+    "n": 2,
+    "slide": 21,
+    "label": "DAY FOUR",
+    "patient": {
+      "name": "Patient N",
+      "when": "Day 4",
+      "lines": [
+        "71-year-old man",
+        "Pneumonia",
+        "",
+        "KDIGO stage 3 AKI,",
+        "CRRT started yesterday",
+        "",
+        "Enteral feed running,",
+        "protein 1.1 g/kg/day",
+        "",
+        "Dietitian recommends",
+        "2.0 g/kg/day to cover",
+        "CRRT losses"
+      ],
+      "tag": "AKI ON CRRT"
+    },
+    "context": null,
+    "question": "The dietitian wants protein raised from 1.1 to 2.0 g/kg/day. Do you?",
+    "options": [
+      "Yes, CRRT losses need replacing",
+      "Yes, but to about 1.5, not 2.0",
+      "No, leave it where it is",
+      "No, and I would reduce it",
+      "I do not know the evidence"
+    ],
+    "multi": false,
+    "deck": "BTP_08_Housekeeping_II_ABC_v6"
+  },
+  {
+    "id": "s08-p03",
+    "session": 8,
+    "n": 3,
+    "slide": 26,
+    "label": "DAY FOUR, AGAIN",
+    "patient": {
+      "name": "Patient N",
+      "when": "Day 4",
+      "lines": [
+        "71-year-old man",
+        "Pneumonia",
+        "",
+        "KDIGO stage 3 AKI,",
+        "CRRT started yesterday",
+        "",
+        "Enteral feed running,",
+        "protein 1.1 g/kg/day",
+        "",
+        "Dietitian recommends",
+        "2.0 g/kg/day to cover",
+        "CRRT losses"
+      ],
+      "tag": "AKI ON CRRT"
+    },
+    "context": null,
+    "question": "Same patient, same request. Do you?",
+    "options": [
+      "Yes, CRRT losses need replacing",
+      "Yes, but to about 1.5, not 2.0",
+      "No, leave it where it is",
+      "No, and I would reduce it",
+      "I do not know the evidence"
+    ],
+    "multi": false,
+    "deck": "BTP_08_Housekeeping_II_ABC_v6",
+    "compareWith": "s08-p02"
+  },
+  {
+    "id": "s08-p04",
+    "session": 8,
+    "n": 4,
+    "slide": 39,
+    "label": "DAY ONE",
+    "patient": {
+      "name": "Patient P",
+      "when": "Day 1",
+      "lines": [
+        "64-year-old man",
+        "Pneumonia, septic shock",
+        "Ventilated, noradrenaline",
+        "",
+        "128 kg, BMI 41",
+        "",
+        "Creatinine 290 and rising,",
+        "oliguric",
+        "",
+        "Pharmacist asks: enoxaparin",
+        "or heparin, and what dose?"
+      ],
+      "tag": "OBESE, AKI"
+    },
+    "context": null,
+    "question": "Admission orders. Which heparin, and what dose?",
+    "options": [
+      "Enoxaparin 40 mg daily",
+      "Enoxaparin, weight-adjusted",
+      "Enoxaparin, titrate to anti-Xa",
+      "Enoxaparin, renally reduced",
+      "UFH, because of the kidneys"
+    ],
+    "multi": false,
+    "deck": "BTP_08_Housekeeping_II_ABC_v6"
+  },
+  {
+    "id": "s08-p05",
+    "session": 8,
+    "n": 5,
+    "slide": 49,
+    "label": "DAY TWO",
+    "patient": {
+      "name": "Patient Q",
+      "when": "Day 2",
+      "lines": [
+        "29-year-old man",
+        "Motorbike crash, ISS 34",
+        "",
+        "Small frontal contusions,",
+        "stable on repeat CT",
+        "",
+        "Pelvic and femoral fractures,",
+        "fixed today",
+        "",
+        "Neurosurgery: no heparin",
+        "for a week"
+      ],
+      "tag": "CAN'T ANTICOAGULATE"
+    },
+    "context": null,
+    "question": "Neurosurgery says no heparin for a week. What do you do?",
+    "options": [
+      "Calf compressors, wait the week",
+      "Compressors plus an IVC filter",
+      "Heparin after a stable repeat CT",
+      "Twice-weekly leg ultrasound",
+      "Accept the week: their call"
+    ],
+    "multi": false,
+    "deck": "BTP_08_Housekeeping_II_ABC_v6"
+  },
+  {
+    "id": "s08-p06",
+    "session": 8,
+    "n": 6,
+    "slide": 60,
+    "label": "DAY THREE",
+    "patient": {
+      "name": "Patient S",
+      "when": "Day 3",
+      "lines": [
+        "58-year-old man",
+        "Severe pancreatitis,",
+        "ventilated",
+        "",
+        "Noradrenaline and",
+        "vasopressin",
+        "Platelets 42",
+        "APACHE II 31",
+        "",
+        "Nasojejunal feed",
+        "at target"
+      ],
+      "tag": "SICKEST, AND FED"
+    },
+    "context": null,
+    "question": "Stress ulcer prophylaxis for Patient S?",
+    "options": [
+      "Pantoprazole 40 mg IV daily",
+      "An H2 receptor antagonist instead",
+      "No, he is fed",
+      "No, PPIs may harm the sickest",
+      "Yes, stop it on full feeds"
+    ],
+    "multi": false,
+    "deck": "BTP_08_Housekeeping_II_ABC_v6"
+  },
+  {
+    "id": "s08-p07",
+    "session": 8,
+    "n": 7,
+    "slide": 68,
+    "label": "DAY THREE, AGAIN",
+    "patient": {
+      "name": "Patient S",
+      "when": "Day 3",
+      "lines": [
+        "58-year-old man",
+        "Severe pancreatitis,",
+        "ventilated",
+        "",
+        "Noradrenaline and",
+        "vasopressin",
+        "Platelets 42",
+        "APACHE II 31",
+        "",
+        "Nasojejunal feed",
+        "at target"
+      ],
+      "tag": "SICKEST, AND FED"
+    },
+    "context": null,
+    "question": "Same patient. Stress ulcer prophylaxis?",
+    "options": [
+      "Pantoprazole 40 mg IV daily",
+      "An H2 receptor antagonist instead",
+      "No, he is fed",
+      "No, PPIs may harm the sickest",
+      "Yes, stop it on full feeds"
+    ],
+    "multi": false,
+    "deck": "BTP_08_Housekeeping_II_ABC_v6",
+    "compareWith": "s08-p06"
   }
 ];
